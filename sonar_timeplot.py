@@ -31,7 +31,7 @@ line5.set_xdata(range(len(A5)))
 plt.axis([0, 1000, 0, 26000])
 plt.show()
 
-UDP_IP = "10.2.98.1"
+UDP_IP = "10.52.90.236"
 UDP_PORT = 2600
 sonarNum = 0
 sonarMeas = 0
@@ -43,6 +43,8 @@ sock.bind((UDP_IP, UDP_PORT))
 A1.append(1)
 A2.append(1)
 A3.append(1)
+A4.append(1)
+A5.append(1)
 line1.set_ydata(A1)
 line1.set_xdata(range(len(A1)))
 line2.set_ydata(A2)

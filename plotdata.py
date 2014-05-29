@@ -10,7 +10,7 @@ soundSpeed = 340   # m/s
 import matplotlib.pyplot as plt
 import numpy as np
 
-f = open("data/5 Sensors Bouncing Ball.csv", 'r')
+f = open("data/data.csv", 'r')
 
 # The first line contains the size of the array
 line = f.readline()

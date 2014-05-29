@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 # Initialize motors and home stage on startup?  1 = yes
-global startup = 1
+startup = 0
 
 # Read all data to clear the buffer
 def empty_socket(sock):
@@ -25,11 +25,13 @@ def sendrail(command):
     return(data)
  
 def startupRail():
+    global startup
     if startup==1:
         print "Starting Motors"
         sendrail("1,start")
         time.sleep(.5)
         sendrail("2,start")
+        time.sleep(.5)
         print "Finding Home"
         sendrail("1,home")
         time.sleep(.5)
@@ -53,7 +55,7 @@ xInc_mm = 12.5
 yInc_mm = 12.5
 
 # Read the previously saved parameters for numpoints and positions
-f = open("/Users/Phil/Savioke/SweepParms.csv", 'r')
+f = open("SweepParms.csv", 'r')
 line = f.readline()
 vals = line.split(',')
 xPos_mm = float(vals[0])
@@ -66,10 +68,12 @@ numSamples = int(float(vals[6]))
 f.close()
 
 # IP and port of the Rail (on WiFi) and MBED (on Ethernet)
-UDP_MBED_IP = "10.2.98.1"
+# MBED is sending UDP packets to a fixed port
+UDP_MBED_IP = "10.52.90.236"
 UDP_MBED_PORT = 2600
+# The rail will send replies to the part sending it UDP data
 UDP_RAIL_IP = "10.52.90.236"
-UDP_RAIL_PORT = 2600
+UDP_RAIL_PORT = 2601
 
 # Open Ports
 sockRail = socket.socket(socket.AF_INET, # Internet
@@ -84,14 +88,16 @@ sockMbed.bind((UDP_MBED_IP, UDP_MBED_PORT))
 string = "none"
 while(string != "9"):
     # Menu
-    print "\nTop Lft : (%.1f, %.1f)mm  = [%d, %d]" % (xPos_mm, yPos_mm, xPos_mm*xCalib, yPos_mm*yCalib)
-    print "Bot Rt  : (%.1f, %.1f)mm  = [%d, %d]" % (xPos_mm+xInc_mm*numPointsX, yPos_mm+yInc_mm*numPointsY, xCalib*(xPos_mm+xInc_mm*numPointsX), yCalib*(yPos_mm+yInc_mm*numPointsY))
-    print "Num Pts : (%d, %d) & %d samples" % (numPointsX, numPointsY, numSamples)
+    print "\nTop Lft  : (%.1f, %.1f)mm  = [%d, %d]" % (xPos_mm, yPos_mm, xPos_mm*xCalib, yPos_mm*yCalib)
+    print "Bot Rt   : (%.1f, %.1f)mm  = [%d, %d]" % (xPos_mm+xInc_mm*numPointsX, yPos_mm+yInc_mm*numPointsY, xCalib*(xPos_mm+xInc_mm*numPointsX), yCalib*(yPos_mm+yInc_mm*numPointsY))
+    print "Num Pts  : (%d, %d) & %d samples" % (numPointsX, numPointsY, numSamples)
+    print "Increment: (%d, %d)mm" % (xInc_mm, yInc_mm)
     print("\n1) Get Top Left Corner")
     print("2) Get Botton Right Corner")
     print("3) Collect Data")
     print("4) Go to Top Lft")
     print("5) Go to Bot Rt")
+    print("6) Change Num Points")
     print("9) Quit")
     string = raw_input(">")
 
@@ -166,7 +172,7 @@ while(string != "9"):
         yInc_mm = stepy/yCalib
 
         # Write the positions to a file
-        f = open('/Users/Phil/Savioke/SweepParms.csv', 'w')
+        f = open('SweepParms.csv', 'w')
         # First line contains the array size and x and y increment sizes
         f.write(str(xPos_mm))
         f.write(',')
@@ -216,6 +222,38 @@ while(string != "9"):
         time.sleep(3)
         sendrail("2,p"+ str(int(yCalib*(yPos_mm+yInc_mm*(numPointsY-1)))))
                 
+    if string == "6":  # Go to bottom right
+        stringx = raw_input("\nNumber of points in x:")
+        stringy = raw_input("Number of points in y:")
+
+        sizex_mm = (numPointsX-1)*xInc_mm
+        sizey_mm = (numPointsY-1)*yInc_mm
+
+        numPointsX = int(stringx)
+        numPointsY = int(stringy)
+
+        # Calculate the step sizes and center positions
+        xInc_mm = sizex_mm/(numPointsX-1)
+        yInc_mm = sizey_mm/(numPointsY-1)
+
+        # Write the positions to a file
+        f = open('SweepParms.csv', 'w')
+        # First line contains the array size and x and y increment sizes
+        f.write(str(xPos_mm))
+        f.write(',')
+        f.write(str(yPos_mm))
+        f.write(',')
+        f.write(str(xInc_mm))
+        f.write(',')
+        f.write(str(yInc_mm))
+        f.write(',')
+        f.write(str(numPointsX))
+        f.write(',')
+        f.write(str(numPointsY))
+        f.write(',')
+        f.write(str(numSamples))
+        f.close()
+        
     if string == "9":
         # Close the ports before exiting
         sockRail.close()
@@ -354,7 +392,7 @@ while(string != "9"):
             time.sleep(1)    
         
         # Write the collected data to a file
-        f = open('data.csv', 'w')
+        f = open('data/data.csv', 'w')
         # First line contains the array size and x and y increment sizes
         f.write(str(numPointsX))
         f.write(',')
